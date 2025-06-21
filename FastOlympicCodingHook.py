@@ -11,6 +11,13 @@ from datetime import datetime
 def slugify(name):
     return ''.join(c if c.isalnum() or c in ['_', '-'] else '_' for c in name).strip('_')
 
+def load_template(template_path, fallback_template):
+    template_path = os.path.expanduser(template_path)
+    if template_path and path.exists(template_path):
+        with open(template_path, "r", encoding="utf8") as f:
+            return f.read()
+    return fallback_template
+
 def make_cpp_template(name, url, group, time_limit, memory_limit):
     return f'''#include <bits/stdc++.h>
 #define uint uint64_t
@@ -47,9 +54,13 @@ signed main()
 }}
 '''
 
-def MakeHandlerClass(base_dir, tests_relative_dir, tests_file_suffix):
-    if not tests_file_suffix:
-        tests_file_suffix = "_tests.txt"
+def MakeHandlerClass(foc_settings):
+    tests_file_suffix = foc_settings.get("tests_file_suffix", "_tests.txt")
+    test_output_dir = os.path.expanduser(foc_settings.get("testcase_output_dir", "~/cp/testcases"))
+    cpp_output_dir = os.path.expanduser(foc_settings.get("cpp_output_dir", "~/cp"))
+    use_title = foc_settings.get("use_title_as_filename", True)
+    template_path = foc_settings.get("template_file", None)
+    fallback_template = make_cpp_template("{name}", "{url}", "{group}", "{time_limit}", "{memory_limit}")
 
     class HandleRequests(BaseHTTPRequestHandler):
         def do_POST(self):
@@ -58,7 +69,6 @@ def MakeHandlerClass(base_dir, tests_relative_dir, tests_file_suffix):
                 body = self.rfile.read(content_length)
                 data = json.loads(body.decode('utf8'))
 
-                # 获取信息
                 title = slugify(data.get("title", "untitled"))
                 name = data.get("name", "Unknown Problem")
                 url = data.get("url", "")
@@ -67,45 +77,47 @@ def MakeHandlerClass(base_dir, tests_relative_dir, tests_file_suffix):
                 memory_limit = data.get("memoryLimit", 256)
                 tests = data.get("tests", [])
 
-                # 创建 cpp 文件
-                os.makedirs(base_dir, exist_ok=True)
-                cpp_filename = f"{title}.cpp"
-                cpp_path = path.join(base_dir, cpp_filename)
+                filename_base = slugify(title if use_title else name)
+                cpp_path = path.join(cpp_output_dir, f"{filename_base}.cpp")
+                os.makedirs(cpp_output_dir, exist_ok=True)
 
                 if not path.exists(cpp_path):
-                    with open(cpp_path, "w") as f:
-                        f.write(make_cpp_template(name, url, group, time_limit, memory_limit))
+                    template_content = load_template(template_path, fallback_template)
+                    template_content = template_content.format(
+                        name=name,
+                        url=url,
+                        group=group,
+                        time_limit=time_limit,
+                        memory_limit=memory_limit
+                    )
+                    with open(cpp_path, "w", encoding="utf8") as f:
+                        f.write(template_content)
 
-                # 保存测试样例
-                test_dir = path.join(base_dir, tests_relative_dir) if tests_relative_dir else base_dir
-                os.makedirs(test_dir, exist_ok=True)
-                test_path = path.join(test_dir, f"{title}{tests_file_suffix}")
+                os.makedirs(test_output_dir, exist_ok=True)
+                test_path = path.join(test_output_dir, f"{filename_base}{tests_file_suffix}")
                 formatted_tests = []
                 for test in tests:
                     formatted_tests.append({
                         "test": test["input"],
                         "correct_answers": [test["output"].strip()]
                     })
-                with open(test_path, "w") as f:
+                with open(test_path, "w", encoding="utf8") as f:
                     f.write(json.dumps(formatted_tests, indent=2))
 
-                # 打开 cpp 文件
                 sublime.active_window().open_file(cpp_path)
-                print(f"Created: {cpp_path}")
-                print(f"Saved test cases: {test_path}")
+                print(f"[Hook] Created: {cpp_path}")
+                print(f"[Hook] Test cases: {test_path}")
             except Exception as e:
-                print("Error:", e)
+                print("[Hook] Error:", e)
             threading.Thread(target=self.server.shutdown, daemon=True).start()
 
     return HandleRequests
 
 class CompetitiveCompanionServer:
-    def startServer(base_dir, foc_settings):
+    def startServer(foc_settings):
         host = 'localhost'
         port = 12345
-        tests_relative_dir = foc_settings.get("tests_relative_dir")
-        tests_file_suffix = foc_settings.get("tests_file_suffix")
-        HandlerClass = MakeHandlerClass(base_dir, tests_relative_dir, tests_file_suffix)
+        HandlerClass = MakeHandlerClass(foc_settings)
         httpd = HTTPServer((host, port), HandlerClass)
         print(f"[Hook] Listening on {host}:{port} ...")
         httpd.serve_forever()
@@ -115,15 +127,10 @@ class FastOlympicCodingHookCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         try:
             foc_settings = sublime.load_settings("FastOlympicCoding.sublime-settings")
-            base_dir = path.expanduser("~/cp")  # <<< 改成你喜欢保存的目录
-            os.makedirs(base_dir, exist_ok=True)
-
             _thread.start_new_thread(
                 CompetitiveCompanionServer.startServer,
-                (base_dir, foc_settings)
+                (foc_settings,)
             )
-
             sublime.message_dialog("FastOlympicCodingHook: Listening for Competitive Companion...")
-
         except Exception as e:
-            print("Hook Error:", e)
+            print("[Hook] Startup error:", e)
