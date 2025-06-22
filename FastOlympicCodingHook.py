@@ -6,7 +6,6 @@ import _thread
 import threading
 import os
 from os import path
-from datetime import datetime
 
 def slugify(name):
     return ''.join(c if c.isalnum() or c in ['_', '-'] else '_' for c in name).strip('_')
@@ -48,13 +47,7 @@ def make_cpp_template(name, url, group, time_limit, memory_limit):
         "        solve();\n"
         "    return 0;\n"
         "}\n"
-    ).format(
-        name=name,
-        url=url,
-        group=group,
-        time_limit=time_limit,
-        memory_limit=memory_limit
-    )
+    ).format(name=name, url=url, group=group, time_limit=time_limit, memory_limit=memory_limit)
 
 def MakeHandlerClass(foc_settings):
     tests_file_suffix = foc_settings.get("tests_file_suffix", "_tests.txt")
@@ -62,7 +55,6 @@ def MakeHandlerClass(foc_settings):
     template_path = foc_settings.get("template_file", None)
     fallback_template = make_cpp_template("{name}", "{url}", "{group}", "{time_limit}", "{memory_limit}")
 
-    # 自动定位 program_** 目录 & 根目录 data/input
     cpp_output_dir = None
     test_output_dir = None
     window = sublime.active_window()
@@ -73,7 +65,7 @@ def MakeHandlerClass(foc_settings):
         base_name = os.path.basename(folder_path)
         if base_name.startswith("program_"):
             cpp_output_dir = folder_path
-            test_output_dir = os.path.normpath(os.path.join(folder_path, "../../..", "data/input"))
+            test_output_dir = os.path.expanduser("~/c++/data/input")
             break
     if not cpp_output_dir:
         cpp_output_dir = os.path.expanduser("~/cp")
@@ -96,7 +88,7 @@ def MakeHandlerClass(foc_settings):
                 tests = data.get("tests", [])
 
                 filename_base = slugify(title if use_title else name)
-                cpp_path = path.join(cpp_output_dir, f"{filename_base}.cpp")
+                cpp_path = path.join(cpp_output_dir, "{}.cpp".format(filename_base))
                 os.makedirs(cpp_output_dir, exist_ok=True)
 
                 if not path.exists(cpp_path):
@@ -112,7 +104,7 @@ def MakeHandlerClass(foc_settings):
                         f.write(template_content)
 
                 os.makedirs(test_output_dir, exist_ok=True)
-                test_path = path.join(test_output_dir, f"{filename_base}{tests_file_suffix}")
+                test_path = path.join(test_output_dir, "{}{}".format(filename_base, tests_file_suffix))
                 formatted_tests = []
                 for test in tests:
                     formatted_tests.append({
@@ -123,11 +115,10 @@ def MakeHandlerClass(foc_settings):
                     f.write(json.dumps(formatted_tests, indent=2))
 
                 sublime.active_window().open_file(cpp_path)
-                print(f"[Hook] Created: {cpp_path}")
-                print(f"[Hook] Test cases: {test_path}")
+                print("[Hook] Created: {}".format(cpp_path))
+                print("[Hook] Test cases: {}".format(test_path))
             except Exception as e:
                 print("[Hook] Error:", e)
-            # 保持监听，不自动 shutdown
 
     return HandleRequests
 
@@ -137,23 +128,10 @@ class CompetitiveCompanionServer:
         port = 12345
         HandlerClass = MakeHandlerClass(foc_settings)
         httpd = HTTPServer((host, port), HandlerClass)
-        print(f"[Hook] Listening on {host}:{port} ...")
+        print("[Hook] Listening on {}:{} ...".format(host, port))
         httpd.serve_forever()
         print("[Hook] Server shutdown.")
 
-class FastOlympicCodingHookCommand(sublime_plugin.TextCommand):
-    def run(self, edit):
-        try:
-            foc_settings = sublime.load_settings("FastOlympicCoding.sublime-settings")
-            _thread.start_new_thread(
-                CompetitiveCompanionServer.startServer,
-                (foc_settings,)
-            )
-            sublime.message_dialog("FastOlympicCodingHook: Listening for Competitive Companion...")
-        except Exception as e:
-            print("[Hook] Startup error:", e)
-
-# ✅ 启动 Sublime 时自动运行监听服务
 def plugin_loaded():
     try:
         foc_settings = sublime.load_settings("FastOlympicCoding.sublime-settings")
