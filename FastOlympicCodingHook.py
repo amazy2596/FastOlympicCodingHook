@@ -19,40 +19,42 @@ def load_template(template_path, fallback_template):
     return fallback_template
 
 def make_cpp_template(name, url, group, time_limit, memory_limit):
-    return f'''#include <bits/stdc++.h>
-#define uint uint64_t
-#define int long long
-using namespace std;
-
-// Problem: {name}
-// Contest: {group}
-// URL: {url}
-
-vector<pair<int, int>> dir8 = {{ {{1, 0}}, {{1, 1}}, {{0, 1}}, {{-1, 1}}, {{-1, 0}}, {{-1, -1}}, {{0, -1}}, {{1, -1}} }};
-vector<pair<int, int>> dir4 = {{ {{1, 0}}, {{0, 1}}, {{-1, 0}}, {{0, -1}} }};
-const int inf = 1e18;
-
-mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
-auto rnd = [](uint l, uint r) {{ return (l <= r ? uniform_int_distribution<uint>(l, r)(rng) : 0); }};
-
-void solve()
-{{
-    
-}}
-
-signed main()
-{{
-    // ios::sync_with_stdio(false);
-    // cout.tie(nullptr);
-    // cin.tie(nullptr);
-    // init();
-    int T = 1;
-    // cin >> T;
-    while (T--)
-        solve();
-    return 0;
-}}
-'''
+    return (
+        "#include <bits/stdc++.h>\n"
+        "#define uint uint64_t\n"
+        "#define int long long\n"
+        "using namespace std;\n\n"
+        "// Problem: {name}\n"
+        "// Contest: {group}\n"
+        "// URL: {url}\n\n"
+        "vector<pair<int, int>> dir8 = {{ {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1} }};\n"
+        "vector<pair<int, int>> dir4 = {{ {1, 0}, {0, 1}, {-1, 0}, {0, -1} }};\n"
+        "const int inf = 1e18;\n\n"
+        "mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());\n"
+        "auto rnd = [](uint l, uint r) { return (l <= r ? uniform_int_distribution<uint>(l, r)(rng) : 0); };\n\n"
+        "void solve()\n"
+        "{\n"
+        "    \n"
+        "}\n\n"
+        "signed main()\n"
+        "{\n"
+        "    // ios::sync_with_stdio(false);\n"
+        "    // cout.tie(nullptr);\n"
+        "    // cin.tie(nullptr);\n"
+        "    // init();\n"
+        "    int T = 1;\n"
+        "    // cin >> T;\n"
+        "    while (T--)\n"
+        "        solve();\n"
+        "    return 0;\n"
+        "}\n"
+    ).format(
+        name=name,
+        url=url,
+        group=group,
+        time_limit=time_limit,
+        memory_limit=memory_limit
+    )
 
 def MakeHandlerClass(foc_settings):
     tests_file_suffix = foc_settings.get("tests_file_suffix", "_tests.txt")
