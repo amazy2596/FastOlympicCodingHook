@@ -6,6 +6,7 @@ import _thread
 import threading
 import os
 from os import path
+from datetime import datetime
 
 def slugify(name):
     return ''.join(c if c.isalnum() or c in ['_', '-'] else '_' for c in name).strip('_')
@@ -53,28 +54,18 @@ def MakeHandlerClass(foc_settings):
     tests_file_suffix = foc_settings.get("tests_file_suffix", "_tests.txt")
     use_title = foc_settings.get("use_title_as_filename", True)
     template_path = foc_settings.get("template_file", None)
-
-    # 使用硬编码 fallback 占位
     fallback_template = make_cpp_template("NAME", "URL", "GROUP", "1000", "256")
 
-    cpp_output_dir = None
-    test_output_dir = None
-    window = sublime.active_window()
-    project_data = window.project_data() or {}
-    folders = project_data.get("folders", [])
-    for folder in folders:
-        folder_path = folder.get("path", "")
-        if not folder_path:
-            continue
-        base_name = os.path.basename(folder_path)
-        if base_name.startswith("program_"):
-            cpp_output_dir = folder_path
-            test_output_dir = os.path.expanduser("~/c++/data/input")
-            break
-    if not cpp_output_dir:
-        cpp_output_dir = os.path.expanduser("~/cp")
-    if not test_output_dir:
-        test_output_dir = os.path.expanduser("~/cp/data/input")
+    # ✅ 使用今天的日期构造路径
+    today = datetime.today()
+    base_dir = os.path.expanduser("~/c++")
+    cpp_output_dir = os.path.join(
+        base_dir,
+        "program_{:04d}".format(today.year),
+        "program_{:02d}".format(today.month),
+        "program_{:02d}".format(today.day)
+    )
+    test_output_dir = os.path.join(base_dir, "data", "input")
 
     class HandleRequests(BaseHTTPRequestHandler):
         def do_POST(self):
