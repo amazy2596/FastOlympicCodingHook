@@ -74,8 +74,9 @@ def MakeHandlerClass(foc_settings):
                 body = self.rfile.read(content_length)
                 data = json.loads(body.decode('utf8'))
 
-                title = slugify(data.get("title", "untitled"))
-                name = data.get("name", "Unknown Problem")
+                title = data.get("title", "untitled") or "untitled"
+                name = data.get("name", "Unknown Problem") or "Unknown Problem"
+                title = slugify(title)
                 url = data.get("url", "")
                 group = data.get("group", "")
                 time_limit = data.get("timeLimit", 1000)
