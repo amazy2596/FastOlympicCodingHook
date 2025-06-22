@@ -7,6 +7,7 @@ import threading
 import os
 from os import path
 from datetime import datetime
+import traceback
 
 def slugify(name):
     if not isinstance(name, str):
@@ -120,6 +121,7 @@ def MakeHandlerClass(foc_settings):
                 print("[Hook] Test cases: {}".format(test_path))
             except Exception as e:
                 print("[Hook] Error:", e)
+                traceback.print_exc()  # 打印完整报错堆栈
 
     return HandleRequests
 
