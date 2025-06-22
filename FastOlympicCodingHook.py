@@ -56,11 +56,27 @@ signed main()
 
 def MakeHandlerClass(foc_settings):
     tests_file_suffix = foc_settings.get("tests_file_suffix", "_tests.txt")
-    test_output_dir = os.path.expanduser(foc_settings.get("testcase_output_dir", "~/cp/testcases"))
-    cpp_output_dir = os.path.expanduser(foc_settings.get("cpp_output_dir", "~/cp"))
     use_title = foc_settings.get("use_title_as_filename", True)
     template_path = foc_settings.get("template_file", None)
     fallback_template = make_cpp_template("{name}", "{url}", "{group}", "{time_limit}", "{memory_limit}")
+
+    # 自动定位 program_** 目录 & 根目录 data/input
+    cpp_output_dir = None
+    test_output_dir = None
+    window = sublime.active_window()
+    project_data = window.project_data() or {}
+    folders = project_data.get("folders", [])
+    for folder in folders:
+        folder_path = folder.get("path", "")
+        base_name = os.path.basename(folder_path)
+        if base_name.startswith("program_"):
+            cpp_output_dir = folder_path
+            test_output_dir = os.path.normpath(os.path.join(folder_path, "../../..", "data/input"))
+            break
+    if not cpp_output_dir:
+        cpp_output_dir = os.path.expanduser("~/cp")
+    if not test_output_dir:
+        test_output_dir = os.path.expanduser("~/cp/data/input")
 
     class HandleRequests(BaseHTTPRequestHandler):
         def do_POST(self):
@@ -109,7 +125,7 @@ def MakeHandlerClass(foc_settings):
                 print(f"[Hook] Test cases: {test_path}")
             except Exception as e:
                 print("[Hook] Error:", e)
-            threading.Thread(target=self.server.shutdown, daemon=True).start()
+            # 保持监听，不自动 shutdown
 
     return HandleRequests
 
@@ -134,3 +150,15 @@ class FastOlympicCodingHookCommand(sublime_plugin.TextCommand):
             sublime.message_dialog("FastOlympicCodingHook: Listening for Competitive Companion...")
         except Exception as e:
             print("[Hook] Startup error:", e)
+
+# ✅ 启动 Sublime 时自动运行监听服务
+def plugin_loaded():
+    try:
+        foc_settings = sublime.load_settings("FastOlympicCoding.sublime-settings")
+        _thread.start_new_thread(
+            CompetitiveCompanionServer.startServer,
+            (foc_settings,)
+        )
+        print("[Hook] Auto-listening for Competitive Companion...")
+    except Exception as e:
+        print("[Hook] Auto-startup error:", e)
