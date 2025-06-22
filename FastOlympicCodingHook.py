@@ -14,13 +14,6 @@ def slugify(name):
         name = str(name) if name is not None else "untitled"
     return ''.join(c if c.isalnum() or c in ['_', '-'] else '_' for c in name).strip('_')
 
-def load_template(template_path, fallback_template):
-    template_path = os.path.expanduser(template_path)
-    if template_path and path.exists(template_path):
-        with open(template_path, "r", encoding="utf8") as f:
-            return f.read()
-    return fallback_template
-
 def make_cpp_template(name, url, group, time_limit, memory_limit):
     return (
         "#include <bits/stdc++.h>\n"
@@ -56,8 +49,6 @@ def make_cpp_template(name, url, group, time_limit, memory_limit):
 def MakeHandlerClass(foc_settings):
     tests_file_suffix = foc_settings.get("tests_file_suffix", "_tests.txt")
     use_title = foc_settings.get("use_title_as_filename", True)
-    template_path = foc_settings.get("template_file", None)
-    fallback_template = make_cpp_template("NAME", "URL", "GROUP", "1000", "256")
 
     # 基于日期的输出路径
     today = datetime.today()
@@ -92,8 +83,7 @@ def MakeHandlerClass(foc_settings):
 
                 # 写入 cpp 文件
                 if not path.exists(cpp_path):
-                    template_content = load_template(template_path, fallback_template)
-                    template_content = template_content.format(
+                    template_content = make_cpp_template(
                         name=name,
                         url=url,
                         group=group,
