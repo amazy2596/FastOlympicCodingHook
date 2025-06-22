@@ -53,7 +53,9 @@ def MakeHandlerClass(foc_settings):
     tests_file_suffix = foc_settings.get("tests_file_suffix", "_tests.txt")
     use_title = foc_settings.get("use_title_as_filename", True)
     template_path = foc_settings.get("template_file", None)
-    fallback_template = make_cpp_template("{name}", "{url}", "{group}", "{time_limit}", "{memory_limit}")
+
+    # 使用硬编码 fallback 占位
+    fallback_template = make_cpp_template("NAME", "URL", "GROUP", "1000", "256")
 
     cpp_output_dir = None
     test_output_dir = None
@@ -62,6 +64,8 @@ def MakeHandlerClass(foc_settings):
     folders = project_data.get("folders", [])
     for folder in folders:
         folder_path = folder.get("path", "")
+        if not folder_path:
+            continue
         base_name = os.path.basename(folder_path)
         if base_name.startswith("program_"):
             cpp_output_dir = folder_path
@@ -130,7 +134,6 @@ class CompetitiveCompanionServer:
         httpd = HTTPServer((host, port), HandlerClass)
         print("[Hook] Listening on {}:{} ...".format(host, port))
         httpd.serve_forever()
-        print("[Hook] Server shutdown.")
 
 def plugin_loaded():
     try:
