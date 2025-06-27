@@ -52,7 +52,7 @@ def MakeHandlerClass(foc_settings):
 
     # 基于日期的输出路径
     today = datetime.today()
-    base_dir = os.path.expanduser("~/c++")
+    base_dir = os.path.expanduser("C:/c++")
     cpp_output_dir = os.path.join(
         base_dir,
         "program_{:04d}".format(today.year),
