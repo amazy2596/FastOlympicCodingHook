@@ -47,7 +47,7 @@ def make_cpp_template(name, url, group, time_limit, memory_limit):
     ).format(name=name, url=url, group=group, time_limit=time_limit, memory_limit=memory_limit)
 
 def MakeHandlerClass(foc_settings):
-    tests_file_suffix = foc_settings.get("tests_file_suffix", "_tests.txt")
+    tests_file_suffix = foc_settings.get("tests_file_suffix", "_tests.in")
     use_title = foc_settings.get("use_title_as_filename", True)
 
     # 基于日期的输出路径
@@ -78,7 +78,8 @@ def MakeHandlerClass(foc_settings):
                 tests = data.get("tests", [])
 
                 filename_base = slugify(title if use_title else name)
-                cpp_path = path.join(cpp_output_dir, "{}.cpp".format(filename_base))
+                cpp_filename = filename_base + ".cpp"
+                cpp_path = path.join(cpp_output_dir, cpp_filename)
                 os.makedirs(cpp_output_dir, exist_ok=True)
 
                 # 写入 cpp 文件
@@ -95,7 +96,8 @@ def MakeHandlerClass(foc_settings):
 
                 # 写入测试数据
                 os.makedirs(test_output_dir, exist_ok=True)
-                test_path = path.join(test_output_dir, "{}{}".format(filename_base, tests_file_suffix))
+                test_filename = cpp_filename + tests_file_suffix  # e.g. A___G1.cpp_tests.in
+                test_path = path.join(test_output_dir, test_filename)
                 formatted_tests = []
                 for test in tests:
                     formatted_tests.append({
@@ -111,7 +113,7 @@ def MakeHandlerClass(foc_settings):
                 print("[Hook] Test cases: {}".format(test_path))
             except Exception as e:
                 print("[Hook] Error:", e)
-                traceback.print_exc()  # 打印完整报错堆栈
+                traceback.print_exc()
 
     return HandleRequests
 
