@@ -96,7 +96,7 @@ def MakeHandlerClass(foc_settings):
 
                 # 写入测试数据
                 os.makedirs(test_output_dir, exist_ok=True)
-                test_filename = cpp_filename + tests_file_suffix  # e.g. A___G1.cpp_tests.in
+                test_filename = filename_base + ".cpp_tests.in"  # e.g. A___G1.cpp_tests.in
                 test_path = path.join(test_output_dir, test_filename)
                 formatted_tests = []
                 for test in tests:
