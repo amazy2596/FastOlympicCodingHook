@@ -12,7 +12,7 @@ import traceback
 def slugify(name):
     if not isinstance(name, str):
         name = str(name) if name is not None else "untitled"
-    return ''.join(c if c.isalnum() or c in ['_', '-'] else '_' for c in name).strip('_')
+    return ''.join(c if c.isalnum() or c == '_' else '_' for c in name).strip('_')
 
 def make_cpp_template(name, url, group, time_limit, memory_limit):
     return (
